@@ -13,6 +13,7 @@
   "tauri": {
     "allowlist": {
       "fs": {
+        "scope": ["$APP", "$APP/*"],
         "all": true
       },
       "path": {
@@ -24,7 +25,7 @@
         "shell": {
         "sidecar" : true,
         "scope": [
-          { "name" : "../sd/txt2img", "sidecar" : true, "args": true }
+          { "name" : "../sd/main", "sidecar" : true, "args": true }
         ]
       }
     },
@@ -36,7 +37,7 @@
         "depends": []
       },
       "externalBin": [
-        "../sd/txt2img"
+        "../sd/main"
       ],
       "icon": [
         "icons/32x32.png",

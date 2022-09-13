@@ -1,40 +1,63 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import Image from "next/image";
 import logo from "../assets/logo.svg";
 
 import { message } from '@tauri-apps/api/dialog';
 import { Command } from '@tauri-apps/api/shell'
+import { removeDir, createDir, writeTextFile, BaseDirectory, readTextFile } from '@tauri-apps/api/fs';
 
-const Gallery = () => {
+const Settings = ({setOutDir, outDir, setWeightsDir, weightsDir}) => {
 
-  const [images, setImages] = useState(["test"])
+  const [submitted, setSubmitted] = useState(false)
 
-  useEffect(() => {
-    const temp = []
-    const get_images = async() => {
-      const images = await invoke("list_images")
-      for (let path in images) {
-        if (!path.includes("grid") && !path.includes(".DS_Store") && path.includes(".png")) {
-          temp.push(path)
-        }
-      }
+  const handleChangeOut = (e) => {
+    e.preventDefault()
+    setOutDir(e.target.value)
+  }
+  const handleChangeWeights = (e) => {
+    e.preventDefault()
+    setWeightsDir(e.target.value)
+  }
+
+  const submit = async() => {
+    setSubmitted(false)
+    const dirs = `outDir=${outDir},weightsDir=${weightsDir}`
+    console.log(dirs)
+
+    try{
+      await removeDir('', { dir: BaseDirectory.App , recursive: true});
+      await createDir('', { dir: BaseDirectory.App });
+      await writeTextFile('app.conf', dirs, { dir: BaseDirectory.App });
+    } catch {
+      await createDir('', { dir: BaseDirectory.App });
+      await writeTextFile('app.conf', dirs, { dir: BaseDirectory.App });   
     }
-    setImages(temp)
-    get_images()
-  },[])
+    setSubmitted(true)
+  }
 
   return(
     <div className="right-content">
       <div className="gallery-head">
-        <h1>Previous renders</h1>
+        <h1>Settings</h1>
       </div>
       <div className="stuff">
-        {images.map((item,i) => {
-          console.log(item)
-          return(<p key={item}>{item}</p>)
-        })}
+        <div className="stuff-container">
+          <p>weights</p>
+          <form>
+            <input onChange={(e) => handleChangeWeights(e)} className="input-settings" defaultValue={weightsDir}></input>
+          </form>
         </div>
+        <div className="stuff-container">
+          <p>output</p>
+          <form>
+            <input onChange={(e) => handleChangeOut(e)} className="input-settings" defaultValue={outDir}></input>
+          </form>
+        </div>
+
+        <button onClick={submit} className="play-2">save changes</button>
+        {submitted && <p>Changes saved!</p>}
+      </div>
     </div>
   )
 }
@@ -44,21 +67,37 @@ const Loader = () => {
   )
 }
 
-const Home = () => {
-  const [prompt, setPromt] = useState("a monkey as a DJ in space");
+const Home = ({outDir, weightsDir}) => {
+  const [prompt, setPromt] = useState("");
   const [isLoading, setLoading] = useState(false)
   const [seed, setSeed] = useState(42)
+  const [seconds, setSeconds] = useState(0);
 
-  function delay(t, v) {
-    return new Promise(function(resolve) { 
-        setTimeout(resolve.bind(null, v), t)
-    });
-  } 
+  function reset() {
+    setSeconds(0);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    let interval = null;
+    if (isLoading) {
+      interval = setInterval(() => {
+        setSeconds(seconds => seconds + 0.1);
+      }, 100);
+    } else if (!isLoading && seconds !== 0) {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading, seconds]);
 
   const generate = async() => {
+    console.log(weightsDir)
+    console.log(outDir)
+
+    reset()
     setLoading(true)
 
-    const command = Command.sidecar("../sd/txt2img", [`--prompt=${prompt}`, "--plms", `--seed=${seed}`], {env:{"PYTORCH_ENABLE_MPS_FALLBACK" : "1"}})
+    const command = Command.sidecar("../sd/main", [`--prompt=${prompt}` ,`--ckpt=${weightsDir}`, `--outdir=${outDir}`])
     await command.execute()
     
     setLoading(false)
@@ -74,9 +113,9 @@ const Home = () => {
   return(
     <div className="right-content">
     <div className="prompt-container">
-      <input value={prompt} onChange={(e) => handleChange(e)}></input>
+      <input value={prompt} placeholder="a monkey as a DJ in space" onChange={(e) => handleChange(e)}></input>
       <button className="play" onClick={generate}>Play!</button>
-
+      <p className="">Generation has taken {seconds.toFixed(1)} seconds</p>
       {isLoading && <Loader />}
     </div>
 
@@ -88,34 +127,31 @@ const Home = () => {
 function App() {
 
   const [isHome, setHome] = useState(true)
+  const [weightsDir, setWeightsDir] = useState(null)
+  const [outDir, setOutDir] = useState(null)
 
-  async function images() {
-    const res = await invoke("get_images")
-    console.log(JSON.parse(res))
-  } 
+  useEffect(() => {
+    const checkDirs = async() => {
 
-  async function write() {
-     
-    let data = {
-      new_thing : 5
+      try {
+        const contents = await readTextFile('app.conf', { dir: BaseDirectory.App });
+        const contentsArray = contents.split(",")
+
+        setOutDir(contentsArray[0].split("=")[1])
+        setWeightsDir(contentsArray[1].split("=")[1])
+
+      } catch(dispatchException) {
+        const desktopPath = await window.__TAURI__.path.desktopDir()
+        const downloadPath = await window.__TAURI__.path.downloadDir()
+
+        const defaultDirs = `outDir=${desktopPath}playground,weightsDir=${downloadPath}app/weights/model.ckpt`
+
+        await createDir('', { dir: BaseDirectory.App });
+        await writeTextFile('app.conf', defaultDirs, { dir: BaseDirectory.App });
+      }
     }
-
-    data = JSON.stringify(data)
-
-    let res = await invoke("write_json", { data });
-    console.log(res)
-  }
-
-  async function greet() {
-    setGreetMsg(await invoke("run", { name }));
-  }
-
-  const handleClick = async() => {
-    const thing = await invoke('play')
-    console.log(thing)
-    setGreetMsg(thing)
-  }
-
+    checkDirs()
+  },[])
 
   return (
     <div className="main">
@@ -132,13 +168,13 @@ function App() {
           </div>
 
           <div className="button-container">
-            <button onClick={() => setHome(false)} className="menu-button">🖼️ <br/> Gallery</button>
+            <button onClick={() => setHome(false)} className="menu-button">🔧 <br/> Settings</button>
           </div>
 
         </div>
 
-        {isHome && <Home/>}
-        {!isHome && <Gallery />}
+        {isHome && <Home outDir={outDir} weightsDir={weightsDir}/>}
+        {!isHome && <Settings setOutDir={setOutDir} outDir={outDir} setWeightsDir={setWeightsDir} weightsDir={weightsDir}/>}
         
       </div>
  

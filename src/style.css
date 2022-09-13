@@ -4,7 +4,7 @@
   line-height: 24px;
   font-weight: 500;
 
-  color: #0f0f0f;
+  color: white;
   background-color: #2A2D32;
 
   font-synthesis: none;
@@ -137,6 +137,27 @@ h1 {
   background-color: #4A43CE; 
 }
 
+.play-2{
+  border-radius: 8px;
+  border: 1px solid #4A43CE;
+  margin-top: 2em;
+  margin-bottom: 2em;
+  padding: 0.6em 3em;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  transition: 0.25s;
+  cursor: pointer;
+  background-color: #25272C;
+  color: white;
+  width: 30%;
+  box-shadow: -5px -5px 10px -1px rgba(231, 211, 211, 0.25);
+}
+.play-2:hover{
+  background-color: #4A43CE; 
+}
+
+
 .menu-button{
   width:100%;
   border-radius: 8px;
@@ -214,6 +235,13 @@ button {
   }
 }
 
+form{
+  display: flex;
+  width: 90%;
+  justify-content: center;
+  align-items: center; 
+}
+
 .gallery-head {
   display: flex;
   width: 100%;
@@ -226,11 +254,35 @@ button {
 .stuff{
   display:flex;
   flex-direction: column;
-  width: 70%;
+  width: 90%;
   justify-content: center;
+  align-items: center;
   text-align: left;
   color: white; 
 }
+
+.input-settings {
+  width: 70%;
+  border-radius: 8px;
+  border: 1px solid white;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  transition: border-color 0.25s;
+  background-color: inherit;
+  color: white;
+}
+
+.stuff-container{
+  display:flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-around;
+  text-align: left;
+  color: white; 
+}
+
 
 .lds-hourglass {
   display: inline-block;
