@@ -1,3 +1,7 @@
+# Demo
+
+https://user-images.githubusercontent.com/24875419/189977767-4b0b2517-c8d7-4321-afb7-ad0cea589630.mp4
+
 # Tauri + Next.js
 
 This template should help get you started developing with Tauri and Next.js.
